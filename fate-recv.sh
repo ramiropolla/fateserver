@@ -87,9 +87,10 @@ fi
 
 unset IFS
 
-nwarn=$(grep -Eci '\<warning\>' compile.log) || true
+makeopts=$(head -n 1 compile.log)
 
-echo "stats:$ntest:$npass:$nwarn" >>summary
+echo "stats:$ntest:$npass" >>summary
+echo "makeopts:$makeopts" >>summary
 
 repdir=$slotdir/$date
 mkdir $repdir

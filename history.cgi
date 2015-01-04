@@ -36,7 +36,7 @@ close D;
 print "Content-type: text/html\r\n\r\n";
 
 head1;
-print "<title>FATE: $slot</title>\n";
+print "<title>MATE: $slot</title>\n";
 head2;
 print "Report history for $slot";
 head3;
@@ -44,7 +44,7 @@ head3;
 start 'div', class => 'table-responsive';
 start 'table', id => 'history', class => 'replist table';
 start 'thead';
-trowh 'Time', 'Rev', 'Arch', 'OS', 'Compiler', 'Warnings', 'Tests';
+trowh 'Time', 'Rev', 'Arch', 'OS', 'OSD', 'Compiler', 'Status';
 end 'thead';
 start 'tbody';
 for my $date ((sort { $b cmp $a } @reps)[0..49]) {
@@ -58,22 +58,22 @@ for my $date ((sort { $b cmp $a } @reps)[0..49]) {
 
     start 'tr', class => 'alt hilight';
     td agestr $age, $time;
-    if ($gitweb and $$rep{rev} =~ /(N-)?(.*)/) {
+    if ($gitweb) {
         start 'td';
-        anchor $$rep{rev}, href => "$gitweb;a=commit;h=$2";
+        anchor $$rep{rev}, href => "$gitweb$$rep{rev}";
         end 'td';
     } else {
         td $$rep{rev};
     }
     td $$rep{subarch} || $$rep{arch};
     td $$rep{os};
+    td $$rep{osd};
     td $$rep{cc};
-    td $$rep{nwarn};
     if ($npass) {
         $rtext  = "$npass / $ntest";
         $rclass = $npass==$ntest? 'pass' : $npass? 'warn' : 'fail';
     } elsif (!$ntest and !$$rep{status}) {
-        $rtext  = "build only";
+        $rtext  = $$rep{status}? 'FAIL' : 'OK';
         $rclass = $$rep{status}? 'fail' : 'pass';
     } else {
         $rtext  = $$rep{errstr};

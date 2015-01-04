@@ -26,19 +26,19 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw/Exporter/;
     @EXPORT  = qw/split_header split_config split_rec parse_date agestr
-                  split_stats load_summary load_report load_lastpass
+                  split_stats split_makeopts load_summary load_report load_lastpass
                   start end tag h1 span trow trowa trowh th td anchor
                   head1 head2 head3 footer
                   fail $fatedir $recent_age $ancient_age $hidden_age href
                   $gitweb/;
 }
 
-our $fatedir = "/var/www/fateweb";
+our $fatedir = "/var/www/mame/data";
 our $recent_age  = 3600;
 our $ancient_age = 3 * 86400;
 our $hidden_age  = 30 * 86400;
 our $pretty_links = 0;
-our $gitweb = "http://git.videolan.org/?p=ffmpeg.git";
+our $gitweb = "https://github.com/mamedev/mame/commit/";
 
 #require "$ENV{FATEWEB_CONFIG}";
 
@@ -66,8 +66,9 @@ sub split_config {
         subarch => $conf[2],
         cpu     => $conf[3],
         os      => $conf[4],
-        cc      => $conf[5],
-        config  => $conf[6],
+        osd     => $conf[5],
+        cc      => $conf[6],
+        config  => $conf[7],
     };
 }
 
@@ -78,7 +79,13 @@ sub split_stats {
         ntests => int $st[1],
         npass  => int $st[2],
         nfail  => int $st[1] - int $st[2],
-        nwarn  =>     $st[3],
+    };
+}
+
+sub split_makeopts {
+    my @makeopts = split /:/, $_[0];
+    return {
+        makeopts => $makeopts[1],
     };
 }
 
@@ -101,8 +108,9 @@ sub load_summary {
         my $hdr  = split_header scalar <S> or return;
         my $conf = split_config scalar <S> or return;
         my $st   = split_stats  scalar <S> or return;
+        my $makeopts = split_makeopts scalar <S> or return;
         close S;
-        return { %$hdr, %$conf, %$st };
+        return { %$hdr, %$conf, %$st, %$makeopts };
     }
 
     return if not -f "$repdir/report.xz";
@@ -310,61 +318,21 @@ EOF
 sub head2 {
     # Copied from ffmpeg-web
     print <<EOF;
-    <link rel="stylesheet" href="https://ffmpeg.org/css/font-awesome.min.css" />
-    <link rel="stylesheet" href="https://ffmpeg.org/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://ffmpeg.org/css/simple-sidebar.css" />
-    <link rel="stylesheet" href="https://ffmpeg.org/css/style.min.css" />
-    <link rel="stylesheet" href="/fate.css" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/style.min.css" />
+    <link rel="stylesheet" href="/css/fate.css" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
     <!--[if lt IE 9]>
-      <script src="https://ffmpeg.org/js/html5shiv.min.js"></script>
-      <script src="https://ffmpeg.org/js/respond.min.js"></script>
+      <script src="/js/html5shiv.min.js"></script>
+      <script src="/js/respond.min.js"></script>
     <![endif]-->
 
-    <link rel="shortcut icon" href="https://ffmpeg.org/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico" />
   </head>
   <body>
 
     <div id="wrapper">
-
-      <nav id="sidebar-wrapper">
-        <ul class="sidebar-nav">
-          <li class="sidebar-brand"><a href=".">
-              <img src="https://ffmpeg.org/img/ffmpeg3d_white_20.png" alt="FFmpeg" />
-              FFmpeg</a>
-          </li>
-          <li><a href="https://ffmpeg.org/about.html">About</a></li>
-          <li><a href="https://ffmpeg.org/index.html#news">News</a></li>
-          <li><a href="https://ffmpeg.org/download.html">Download</a></li>
-          <li><a href="https://ffmpeg.org/documentation.html">Documentation</a></li>
-          <li><a href="https://ffmpeg.org/contact.html#MailingLists">Community</a>
-            <ul>
-              <li><a href="https://ffmpeg.org/contact.html#MailingLists">Mailing Lists</a></li>
-              <li><a href="https://ffmpeg.org/contact.html#IRCChannels">IRC</a></li>
-              <li><a href="https://ffmpeg.org/contact.html#Forums">Forums</a></li>
-              <li><a href="https://ffmpeg.org/bugreports.html">Bug Reports</a></li>
-              <li><a href="http://trac.ffmpeg.org">Wiki</a></li>
-            </ul>
-          </li>
-          <li><a href="#">Developers</a>
-            <ul>
-              <li><a href="https://ffmpeg.org/download.html#get-sources">Source Code</a>
-              <li><a href="/">FATE</a></li>
-              <li><a href="http://coverage.ffmpeg.org">Code Coverage</a></li>
-            </ul>
-          </li>
-          <li><a href="#">More</a>
-            <ul>
-              <li><a href="https://ffmpeg.org/donations.html">
-                  Donate<span style="color: #e55; font-size: 0.8em; margin-left: -10px"><i class="fa fa-heart"></i></span></a></li>
-              <li><a href="https://ffmpeg.org/consulting.html">Hire Developers</a></li>
-              <li><a href="https://ffmpeg.org/contact.html">Contact</a></li>
-              <li><a href="https://ffmpeg.org/security.html">Security</a></li>
-              <li><a href="https://ffmpeg.org/legal.html">Legal</a></li>
-            </ul>
-          </li>
-        </ul>
-      </nav>
 
       <div id="page-content-wrapper">
         <header class="content-header">
@@ -386,9 +354,6 @@ sub footer {
         </div> <!-- page-content-inset -->
       </div> <!-- page-content-wrapper -->
     </div> <!-- wrapper -->
-
-    <script src="https://ffmpeg.org/js/jquery.min.js"></script>
-    <script src="https://ffmpeg.org/js/bootstrap.min.js"></script>
 
     <!-- Custom JavaScript for the Menu Toggle -->
     <script>
@@ -412,11 +377,11 @@ sub fail {
     start 'head';
     tag 'meta', 'http-equiv' => "Content-Type",
                 'content'    => "text/html; charset=utf-8";
-    print "<title>FATE error</title>\n";
+    print "<title>MATE error</title>\n";
     end 'head';
 
     start 'body';
-    h1 "FATE error", id => 'title';
+    h1 "MATE error", id => 'title';
     print "$msg\n";
     end 'body';
     end 'html';

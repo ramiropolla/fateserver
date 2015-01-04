@@ -71,7 +71,7 @@ if ($ENV{HTTP_ACCEPT_ENCODING} =~ /gzip/) {
 }
 
 head1;
-print "<title>FATE: $$hdr{slot} $$hdr{rev}</title>\n";
+print "<title>MATE: $$hdr{slot} $$hdr{rev}</title>\n";
 print <<EOF;
 <script type="text/javascript">
   function toggle(id) {
@@ -101,15 +101,16 @@ trow 'Architecture',  $$conf{arch};
 trow 'Variant',       $$conf{subarch};
 trow 'CPU',           $$conf{cpu};
 trow 'OS',            $$conf{os};
+trow 'OSD',           $$conf{osd};
 trow 'Owner',         $owner if $owner;
 trow 'Compiler',      $$conf{cc};
-trow 'Configuration', '<code>' . $$conf{config} . '</code>';
+trow 'Make command',  $$rep{makeopts};
 trow 'Comment',       $$hdr{comment};
 start 'tr';
 td   'Revision';
-if ($gitweb and $$hdr{rev} =~ /(N-)?(.*)/) {
+if ($gitweb) {
     start 'td';
-    anchor $$hdr{rev}, href => "$gitweb;a=commit;h=$2";
+    anchor $$hdr{rev}, href => "$gitweb$$rep{rev}";
     end 'td';
 } else {
     td $$hdr{rev};
@@ -117,7 +118,6 @@ if ($gitweb and $$hdr{rev} =~ /(N-)?(.*)/) {
 end 'tr';
 trow 'Date',          asctime gmtime parse_date $$hdr{date};
 trow 'Status',        $npass? "$npass / $ntest" : "$$hdr{errstr} ($$hdr{status})";
-trow 'Warnings',      $$rep{nwarn};
 start 'tr';
 td 'Logs';
 start 'td';

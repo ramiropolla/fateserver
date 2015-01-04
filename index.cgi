@@ -67,7 +67,6 @@ for my $slot (@slots) {
     if (my $prev = load_summary $slot, 'previous') {
         my $pfail = $$prev{ntests} - $$prev{npass};
         $$rep{alert} = $$rep{ntests} && $$rep{nfail} <=> $pfail;
-        $$rep{dwarn} = $$rep{nwarn} <=> $$prev{nwarn};
         $$rep{pdate} = $$prev{date};
     }
 }
@@ -80,7 +79,7 @@ $allpass = 100 * $allpass / @reps;
 $allfail = 100 * $allfail / @reps;
 my $warn = 100 - $allpass - $allfail;
 
-my @sort = ('subarch', 'os', 'cc', 'comment', 'slot');
+my @sort = ('subarch', 'os', 'osd', 'cc', 'comment', 'slot');
 my $sdir = 1; # default to ascending sorting
 defined $sort and unshift @sort, split /\/\//, $sort;
 $sort ||= $sort[0];
@@ -165,7 +164,6 @@ sub category {
 }
 
 print "Content-type: text/html\r\n";
-print "Access-Control-Allow-Origin: https://ffmpeg.org\r\n";
 
 if ($ENV{HTTP_ACCEPT_ENCODING} =~ /gzip/) {
     print "Content-Encoding: gzip\r\n\r\n";
@@ -175,7 +173,7 @@ if ($ENV{HTTP_ACCEPT_ENCODING} =~ /gzip/) {
 }
 
 head1;
-print "<title>FATE</title>\n";
+print "<title>MATE - MAME Automated Test Environment</title>\n";
 print <<EOF;
 <script type="text/javascript">
   function toggle(id, arr) {
@@ -193,7 +191,7 @@ print <<EOF;
 </script>
 EOF
 head2;
-print "FATE\n";
+print "MATE - MAME Automated Test Environment\n";
 head3;
 
 if (@queries) {
@@ -242,10 +240,10 @@ start 'th'; lsort 'Time',     'descdate';      end 'th';
 start 'th'; lsort 'Rev',      'rev';           end 'th';
 start 'th'; lsort 'Arch',     'arch';          end 'th';
 start 'th'; lsort 'OS',       'os';            end 'th';
+start 'th'; lsort 'OSD',      'osd';           end 'th';
 start 'th'; lsort 'Compiler', 'cc';            end 'th';
 start 'th'; lsort 'Comment',  'comment';       end 'th';
-start 'th'; lsort 'Warnings', 'nwarn';         end 'th';
-start 'th'; lsort 'Tests',    'npass';         end 'th';
+start 'th'; lsort 'Status',    'npass';         end 'th';
 end 'tr';
 end 'thead';
 start 'tbody';
@@ -274,9 +272,9 @@ for my $rep (sort repcmp @reps) {
     start 'td';
     anchor $agestr, href => href slot => $$rep{slot};
     end 'td';
-    if ($gitweb and $$rep{rev} =~ /(N-)?(.*)/) {
+    if ($gitweb) {
         start 'td';
-        anchor $$rep{rev}, href => "$gitweb;a=commit;h=$2";
+        anchor $$rep{rev}, href => "$gitweb$$rep{rev}";
         end 'td';
     } else {
         td $$rep{rev};
@@ -284,18 +282,19 @@ for my $rep (sort repcmp @reps) {
 
     category 'subarch', $rep;
     category 'os', $rep;
+    category 'osd', $rep;
     category 'cc', $rep;
     td $$rep{comment}, class => 'comment';
     if ($npass) {
         $rtext  = "$npass / $ntest";
         $rclass = $npass==$ntest? 'pass' : $npass? 'warn' : 'fail';
     } elsif (!$ntest and !$$rep{status}) {
-        $rtext  = "build only";
+        $rtext  = $$rep{status}? 'FAIL' : 'OK';
         $rclass = $$rep{status}? 'fail' : 'pass';
     } else {
         $rtext  = $$rep{errstr};
         $rclass = 'fail';
-        for my $base ('test', 'compile', 'configure') {
+        for my $base ('compile') {
             my $file = "$fatedir/$$rep{slot}/$$rep{date}/$base.log.gz";
             if (-r $file) {
                 $log = qx{zcat $file | tail -n20};
@@ -303,17 +302,6 @@ for my $rep (sort repcmp @reps) {
             }
         }
     }
-    start 'td', class => "$walert";
-    start 'div', class => 'pull-left';
-    anchor $$rep{nwarn},
-        href => href slot => $$rep{slot}, time => $$rep{date}, log => 'compile';
-    end;
-    start 'div', class => 'pull-right';
-    anchor '±',
-        href => href slot => $$rep{slot}, time => $$rep{date},
-        log => "compile/$$rep{pdate}";
-    end;
-    end;
     start 'td', class => "$rclass";
     start 'div', class => 'pull-left';
     anchor $rtext, href => href slot => $$rep{slot}, time => $$rep{date};
